@@ -88,6 +88,17 @@ export default {
     closePrintPop() {
       this.showPrint = false;
     },
+    getOpenId(){
+      this.$ajax.post("http://qa.travbao.com/goabraod/visaServe/getOpenId_H5.do", {
+          code: str,
+        })
+        .then((res) => {
+          if (res.data.code == 0) {
+            var spId = res.data.data.spId;
+          }
+         
+        });
+    }
   },
 };
 </script>
