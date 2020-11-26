@@ -9,10 +9,22 @@
           成后可在所选机场的出国宝智能终端扫码完成打印！
         </div>
       </div>
-      <div class="pdf_box">
-        <img src="../assets/img/pdf.png" alt="" class="pdf_img" />
-        <p class="pdf_name">泰国电子签证.pdf</p>
-      </div>
+      <!-- <div class="pdf_box"> -->
+        <!-- <img src="../assets/img/pdf.png" alt="" class="pdf_img" /> -->
+        <!-- <p class="pdf_name">泰国电子签证.pdf</p> -->
+        <van-uploader class="pdf_box" :after-read="afterRead" accept="*.pdf">
+          <img src="../assets/img/pdf.png" alt="" class="pdf_img" />
+          <p class="pdf_name">{{fileName}}</p>
+          <!-- <van-button icon="plus" type="primary">上传文件</van-button> -->
+        </van-uploader>
+      <!-- </div> -->
+
+      <!-- <van-uploader v-model="fileList">
+  <template #preview-cover="{ file }">
+    <div class="preview-cover van-ellipsis">{{ file.name }}</div>
+  </template>
+</van-uploader> -->
+
     </div>
     <div class="airport">
       <h3 class="airport_text"><span>选择打印的机场</span></h3>
@@ -31,12 +43,13 @@
         <van-picker
           show-toolbar
           :columns="columns"
+          value-key = "cityName" 
           @confirm="onConfirm"
           @cancel="showPicker = false"
         />
       </van-popup>
     </div>
-    <van-button type="primary" size="large" class="pay_btn" to="payfor"
+    <van-button type="primary" size="large" class="pay_btn" @click="confirmBtn"
       >确认并支付</van-button
     >
     <!-- 判断是否有已完成支付且未打印的订单 -->
@@ -49,7 +62,8 @@
       <p class="noprint_txt">
         您有已完成支付且待打印的订单，请直接使用订单二维码进行打印！
       </p>
-      <van-button type="primary" class="order_btn" url="/payfor"
+      <van-button type="primary" class="order_btn" url="/payfor" 
+       
         >确认并支付</van-button
       >
     </van-popup>
@@ -72,32 +86,123 @@ export default {
     return {
       orderNumber: "",
       value: "",
-      columns: ["杭州", "宁波", "温州", "嘉兴", "湖州"],
+      cityId:"",
+      columns: [],
       showPicker: false,
       showUnprint: false,
-      showPrint: true,
+      showPrint: false,
       overlayFlag: false,
+      file:[],
+      fileName:'请点击上传',
+      pdfList:[]
+
     };
+  },
+  created(){
+    // this.getCode ()
+    this.getAirport()
   },
   methods: {
     onClickLeft() {},
     onConfirm(value) {
-      this.value = value;
+      this.value = value.cityName;
+      this.cityId = value.cityId;
       this.showPicker = false;
     },
     closePrintPop() {
       this.showPrint = false;
+      
     },
+    getCode () { // 非静默授权，第一次有弹框
+		  var _this = this;
+		  const local = encodeURIComponent('https://www.travbao.com');
+      // const local = encodeURIComponent('');
+      console.log(local)
+		  const appid = 'wx05441d84fc1cabb0';
+		  window.location.href = 'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx05441d84fc1cabb0&redirect_uri='+ local +'&response_type=code&scope=snsapi_base&state=123#wechat_redirect'
+	  },
     getOpenId(){
       this.$ajax.post("http://qa.travbao.com/goabraod/visaServe/getOpenId_H5.do", {
-          code: str,
+          code
         })
         .then((res) => {
+          console.log(res)
           if (res.data.code == 0) {
-            var spId = res.data.data.spId;
           }
          
         });
+    },
+    getAirport(){
+      var _this = this
+      _this.$axios({
+		  	url:'visaServe/getDepartureCity.do',
+		  	method:'post',
+		  }).then(function(res){
+      console.log(res)
+      if(res.data.code == 0){
+      _this.columns = res.data.data.departureCity
+      }
+      })
+    },
+    afterRead(file) {
+      this.file = file.file
+      this.fileName = file.file.name
+    },
+    uploadPdf(){
+      var _this = this
+      var formdata = new FormData();
+       formdata.append("files",this.file);
+       formdata.append("cityId",this.cityId);
+       _this.$axios({
+		  	url:'visaServe/upLoadPdfFile.do',
+        method:'post',
+        data:formdata
+		  }).then(function(res){
+        if(res.data.code == 0){
+          _this.pdfList = res.data.data.pdfList
+        }
+      })
+    },
+    submitPdf(){
+      var _this = this
+      _this.$axios({
+		  	url:'visaServe/submitPdfFileOrder.do',
+        method:'post',
+        data:{
+        "userPdfList": _this.pdfList,
+        "userSelectPackage": {
+            "package01": "",
+            "package01_guIds": "",
+            "package02": "",
+            "package02_guIds": "",
+            "package03": "",
+            "package03_guIds": "",
+            "package04": "gsp15940132750881",//彩色A4 
+            "package04_guIds": _this.pdfList[0].gfId,
+            "package05": "",
+            "package05_guIds": ""
+        },
+        "other": {
+            "userId": "",
+            "cityId": _this.cityId,
+            "countryId": "PDF",
+            "goOrderSource": "003"
+        }
+    }
+		  }).then(function(res){
+        if(res.data.code == 0){
+        
+        }
+      })
+    },
+    confirmBtn(){
+      // this.getCode ()
+      this.uploadPdf()
+      // this.submitPdf()
+      this.$router.push({
+        path: "/order"
+      });
+      // to="payfor"
     }
   },
 };
@@ -232,6 +337,17 @@ export default {
   font-size: 0.18rem;
   color: #26b6ed;
   float: right;
+}
+#preview .van-uploader__wrapper{
+      width: 100%;
+    height: 100%;
+}
+#preview .van-uploader__input-wrapper{
+      width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
 }
 </style>
 

@@ -2,8 +2,8 @@
   <div id="order">
     <van-nav-bar title="订单详情" left-arrow @click-left="onClickLeft" />
     <div class="paywrap">
-      <h2 class="pay_h2">打印码：0214547896</h2>
-      <div class="qrcode"></div>
+      <h2 class="pay_h2">打印码：{{orderInfo.goOrderPrintCode}}</h2>
+        <img :src="orderInfo.goOrderPrintCodeUrl" alt="" class="qrcode">
       <p class="pay_tip">
         请在 <span class="pay_time">广州白云机场</span>入境资料自助打印机
         <span class="pay_time">4</span>号机 打印，共
@@ -23,7 +23,7 @@
       <div style="padding: 0.1rem 0">
         <div class="cell">
           <p class="cell_left">订单内容</p>
-          <span class="cell_right">电子签证打印</span>
+          <span class="cell_right">{{orderInfo.goName}}</span>
         </div>
         <div class="cell">
           <p class="cell_left">打印份数</p>
@@ -31,9 +31,7 @@
         </div>
         <div class="cell">
           <p class="cell_left">总价</p>
-          <span class="cell_right"
-            ><i class="ori_price">¥6</i><i class="total_price">¥3</i></span
-          >
+          <span class="cell_right"><i class="total_price">¥{{orderInfo.goOrderPayment}}</i></span>
         </div>
       </div>
     </div>
@@ -42,11 +40,11 @@
       <div style="padding: 0.1rem 0">
         <div class="cell">
           <p class="cell_left">订单编号</p>
-          <span class="cell_right">2102151454</span>
+          <span class="cell_right">{{orderInfo.goId}}</span>
         </div>
         <div class="cell">
           <p class="cell_left">支付时间</p>
-          <span class="cell_right">2020-02-18 17；49；00:027 </span>
+          <span class="cell_right">{{orderInfo.gocreateTime}}</span>
         </div>
         <div class="cell">
           <p class="cell_left">支付方式</p>
@@ -54,7 +52,7 @@
         </div>
         <div class="cell">
           <p class="cell_left">订单状态</p>
-          <span class="cell_right" style="color: #0086f8">待打印</span>
+          <span class="cell_right" style="color: #0086f8">{{orderInfo.goOrderStatus}}</span>
         </div>
       </div>
     </div>
@@ -72,11 +70,30 @@ export default {
   data() {
     return {
       orderNumber: "",
+      orderInfo:''
     };
+  },
+  created(){
+    this.getOrderInfo()
   },
   methods: {
     onClickLeft() {
       this.$router.go(-1);
+    },
+    getOrderInfo(){
+      var _this = this
+      _this.$axios({
+		  	url:'visaServe/gettOrdersBaseInfo.do',
+        method:'post',
+        data:{
+          goId:'202003171055550201584413755020'
+        }
+		  }).then(function(res){
+      console.log(res)
+      if(res.data.code == 0){
+_this.orderInfo = res.data.data
+      }
+      })
     },
   },
 };
@@ -135,6 +152,7 @@ export default {
   height: 1.4rem;
   background: #fff;
   margin: 0.1rem 0;
+  display: block;
 }
 #order .paywrap .pay_num {
   color: #fff195;
@@ -183,7 +201,7 @@ export default {
 }
 
 #order .exitwrap .cell_left {
-  width: 30%;
+  width: 25%;
 }
 #order .exitwrap .cell_right {
   float: left;
